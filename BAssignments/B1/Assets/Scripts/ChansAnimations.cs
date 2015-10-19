@@ -4,6 +4,9 @@ using System.Collections;
 public class ChansAnimations : MonoBehaviour {
 
 	public Animator anim;
+	
+	NavMeshAgent agent;
+	private Vector3 temp1,temp2;
 
 	private Rigidbody rb;
 	private float inputH;
@@ -11,20 +14,27 @@ public class ChansAnimations : MonoBehaviour {
 	private bool run;
 	private bool jump;
 	private bool slide;
-	
-	// Use this for initialization
+	private bool moveWalk;
+	private bool moveRun;
+	private bool oneClick = false;
+	private bool timer_running;
+	private float timer_for_doubleClick;
+	private float delay;
+
 	void Start () 
 	{
 		anim = GetComponent<Animator>();
 		rb = GetComponent<Rigidbody>();
 		run = false;
 		slide = false;
+		agent = GetComponent<NavMeshAgent>();
+		agent.enabled = false;
 	}
 	
 	// Update is called once per frame
 	void Update () 
 	{
-		if (Input.GetMouseButtonDown (0)) 
+		/*if (Input.GetMouseButtonDown (0)) 
 		{
 			int damageN = Random.Range(0,2);
 
@@ -36,7 +46,7 @@ public class ChansAnimations : MonoBehaviour {
 			{
 				anim.Play("DAMAGED01",-1,0f);
 			}
-		}
+		}	*/
 		
 		if(Input.GetKey(KeyCode.LeftShift))
 		{
@@ -94,5 +104,86 @@ public class ChansAnimations : MonoBehaviour {
 		Vector3 movement = new Vector3 (inputH, 0.0f, inputV);
 		
 		rb.AddForce (movement);
+
+		
+		if (Input.GetMouseButtonDown(0)) 
+		{
+			agent.enabled=false;
+			RaycastHit hit;
+			
+			if (Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, 10000000)) 
+			{
+				temp1 = hit.point;
+			}
+		}
+		
+		if (Input.GetMouseButtonUp(0)) 
+		{
+			RaycastHit hit;
+			
+			if (Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, 10000000)) 
+			{
+				temp2 = hit.point;
+			}
+			if(agent.transform.position.x>temp1.x && agent.transform.position.x < temp2.x &&agent.transform.position.z < temp1.z &&agent.transform.position.z>temp2.z)
+			{
+				agent.enabled = true;
+			}
+		}
+		
+		if (Input.GetMouseButtonDown(1)) 
+		{
+			if(!oneClick)
+			{
+				oneClick = true;
+
+				timer_for_doubleClick = Time.time;
+
+				RaycastHit hit;
+				
+				if (Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, 1000000000000))
+				{
+					agent.destination = hit.point;
+					moveWalk = true;
+					anim.SetBool("moveWalk",true);
+					anim.SetBool("moveRun",false);
+				}
+				
+				if (Mathf.Abs(this.transform.position.x - hit.point.x) <= 25f && Mathf.Abs(this.transform.position.z - hit.point.z) <= 25f)
+				{
+					anim.SetBool("moveWalk",false);
+					anim.SetBool("moveRun",false);
+				}
+			}
+			else
+			{
+				oneClick = false;
+
+				RaycastHit hit;
+				
+				if (Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, 1000000000000))
+				{
+					agent.destination = hit.point;
+					moveWalk = false;
+					moveRun = true;
+					anim.SetBool("moveWalk",false);
+					anim.SetBool("moveRun",true);
+				}
+				
+				if (Mathf.Abs(this.transform.position.x - hit.point.x) <= 25f && Mathf.Abs(this.transform.position.z - hit.point.z) <= 25f)
+				{
+					anim.SetBool("moveWalk",false);
+					anim.SetBool("moveRun",false);
+				}
+			}
+		}
+
+		if (oneClick) 
+		{
+			if(Time.time - timer_for_doubleClick > delay)
+			{
+				oneClick = false;
+			}
+		}
 	}
 }
